@@ -24,53 +24,45 @@ namespace Blog.Controllers
 
         // GET: api/Users
         [HttpGet]
-
         public async Task<ActionResult<ApiResponse<IEnumerable<UserResponseDto>>>> GetUsers()
         {
             var users = await _userService.GetUsersAsync();
-
             return Ok(new ApiResponse<IEnumerable<UserResponseDto>>
             {
                 Success = true,
                 Message = "Users retrieved successfully.",
-                Data = users,
-                Errors = null
+                Data = users
             });
         }
 
-        // GET: api/Users/5
         [HttpGet("{id}")]
         public async Task<ActionResult<ApiResponse<UserResponseDto>>> GetUser(int id)
         {
             var user = await _userService.GetUserByIdAsync(id);
-
             if (user == null)
             {
                 return NotFound(new ApiResponse<UserResponseDto>
                 {
                     Success = false,
                     Message = "User not found.",
-                    Data = null,
-                    Errors = new List<string> { $"No user found with ID {id}." }
+                    Errors = new Dictionary<string, List<string>>
+            {
+                { "Id", new List<string> { $"No user found with ID {id}." } }
+            }
                 });
             }
-
             return Ok(new ApiResponse<UserResponseDto>
             {
                 Success = true,
                 Message = "User retrieved successfully.",
-                Data = user,
-                Errors = null
+                Data = user
             });
         }
 
-
-        // PUT: api/Users/5
         [HttpPut("{id}")]
         public async Task<ActionResult<ApiResponse<bool>>> PutUser(int id, UserUpdateDto userDto)
         {
             var userUpdated = await _userService.UpdateUserAsync(id, userDto);
-
             if (!userUpdated)
             {
                 return NotFound(new ApiResponse<bool>
@@ -78,19 +70,19 @@ namespace Blog.Controllers
                     Success = false,
                     Message = "User update failed.",
                     Data = false,
-                    Errors = new List<string> { $"No user found with ID {id}." }
+                    Errors = new Dictionary<string, List<string>>
+            {
+                { "Id", new List<string> { $"No user found with ID {id}." } }
+            }
                 });
             }
-
             return Ok(new ApiResponse<bool>
             {
                 Success = true,
                 Message = "User updated successfully.",
-                Data = true,
-                Errors = null
+                Data = true
             });
         }
-
 
         // POST: api/Users
         [HttpPost]
@@ -102,18 +94,19 @@ namespace Blog.Controllers
                 {
                     Success = false,
                     Message = "User creation failed.",
-                    Errors = new List<string> { "A user with the provided email already exists." }
+                    Errors = new Dictionary<string, List<string>>
+            {
+                { "Email", new List<string> { "A user with the provided email already exists." } }
+            }
                 });
             }
 
             var createdUserDto = await _userService.CreateUserAsync(userDto);
-
             return Ok(new ApiResponse<UserResponseDto>
             {
                 Success = true,
                 Message = "User created successfully.",
-                Data = createdUserDto,
-                Errors = null
+                Data = createdUserDto
             });
         }
 
@@ -121,16 +114,27 @@ namespace Blog.Controllers
 
         // DELETE: api/Users/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUser(int id)
+        public async Task<ActionResult<ApiResponse<UserResponseDto>>> DeleteUser(int id)
         {
-            var result = await _userService.DeleteUserAsync(id);
-
-            if (!result)
+            var user = await _userService.DeleteUserAsync(id);
+            if (user == null)
             {
-                return NotFound();
+                return NotFound(new ApiResponse<UserResponseDto>
+                {
+                    Success = false,
+                    Message = "User not found.",
+                    Errors = new Dictionary<string, List<string>>
+            {
+                { "Id", new List<string> { $"No user found with ID {id}." } }
             }
-
-            return NoContent();
+                });
+            }
+            return Ok(new ApiResponse<UserResponseDto>
+            {
+                Success = true,
+                Message = "User deleted successfully.",
+                Data = user
+            });
         }
     }
 }

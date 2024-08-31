@@ -5,8 +5,19 @@ using Microsoft.Extensions.Configuration;
 using Blog.Services;
 using Blog.Services.IServices;
 using AutoMapper;
+using Blog.Filters.Blog.Filters;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddControllers( options =>
+{
+    options.Filters.Add<ValidationFilter>();
+})
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.SuppressModelStateInvalidFilter = true;
+    });
 
 // Cargar las variables del archivo .env
 DotNetEnv.Env.Load();

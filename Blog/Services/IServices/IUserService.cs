@@ -10,7 +10,7 @@ namespace Blog.Services.IServices
         Task<UserResponseDto> GetUserByIdAsync(int id);
         Task<bool> UpdateUserAsync(int id, UserUpdateDto userDto);
         Task<UserResponseDto> CreateUserAsync(UserRequestDto userDto);
-        Task<bool> DeleteUserAsync(int id);
+        Task<UserResponseDto> DeleteUserAsync(int id);
         Task<bool> UserExistsByEmailAsync(string email);
 
     }
