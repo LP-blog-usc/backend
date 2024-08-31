@@ -2,6 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using Blog.Data;
 using Blog.Models;
 using Microsoft.Extensions.Configuration;
+using Blog.Services;
+using Blog.Services.IServices;
+using AutoMapper;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,11 +26,15 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
                      new MySqlServerVersion(new Version(8, 0, 30)),
                       mysqlOptions => mysqlOptions.EnableRetryOnFailure()));
 
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
+
 builder.Services.AddControllers();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 var app = builder.Build();
 

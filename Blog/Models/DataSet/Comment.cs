@@ -1,4 +1,4 @@
-﻿namespace Blog.Models
+﻿namespace Blog.Models.DataSet
 {
     public class Comment
     {
