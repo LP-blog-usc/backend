@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Blog.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using System.Data;
+using Blog.Models.DataSet;
 
 namespace Blog.Data
 {
