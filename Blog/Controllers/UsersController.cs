@@ -88,26 +88,55 @@ namespace Blog.Controllers
         [HttpPost]
         public async Task<ActionResult<ApiResponse<UserResponseDto>>> PostUser(UserRequestDto userDto)
         {
-            if (await _userService.UserExistsByEmailAsync(userDto.Email))
+            try
             {
+                if (await _userService.UserExistsByEmailAsync(userDto.Email))
+                {
+                    return BadRequest(new ApiResponse<UserResponseDto>
+                    {
+                        Success = false,
+                        Message = "User creation failed.",
+                        Errors = new Dictionary<string, List<string>>
+                {
+                    { "Email", new List<string> { "A user with the provided email already exists." } }
+                }
+                    });
+                }
+
+                var createdUserDto = await _userService.CreateUserAsync(userDto);
+                return Ok(new ApiResponse<UserResponseDto>
+                {
+                    Success = true,
+                    Message = "User created successfully.",
+                    Data = createdUserDto
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Maneja excepciones específicas como la de rol moderador
                 return BadRequest(new ApiResponse<UserResponseDto>
                 {
                     Success = false,
                     Message = "User creation failed.",
                     Errors = new Dictionary<string, List<string>>
             {
-                { "Email", new List<string> { "A user with the provided email already exists." } }
+                { "Role", new List<string> { ex.Message } }
             }
                 });
             }
-
-            var createdUserDto = await _userService.CreateUserAsync(userDto);
-            return Ok(new ApiResponse<UserResponseDto>
+            catch (Exception ex)
             {
-                Success = true,
-                Message = "User created successfully.",
-                Data = createdUserDto
-            });
+                // Manejo general de otras excepciones
+                return StatusCode(500, new ApiResponse<UserResponseDto>
+                {
+                    Success = false,
+                    Message = "An unexpected error occurred while creating the user.",
+                    Errors = new Dictionary<string, List<string>>
+            {
+                { "Exception", new List<string> { ex.Message } }
+            }
+                });
+            }
         }
 
 

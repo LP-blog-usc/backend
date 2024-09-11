@@ -7,6 +7,7 @@ using Blog.Models.Dtos.Response;
 using Blog.Models.Dtos.UpdateDtos;
 using AutoMapper;
 using Blog.Models.DataSet;
+using Blog.Enums;
 
 public class UserService : IUserService
 {
@@ -84,6 +85,11 @@ public class UserService : IUserService
             throw new InvalidOperationException("El correo electrónico ya existe.");
         }
 
+        if (userDto.RoleId == (int)UserRoleEnum.Moderador)
+        {
+            throw new InvalidOperationException("No se puede crear un usuario con el rol de Moderador.");
+        }
+
         // Mapear el DTO a la entidad User
         var user = _mapper.Map<User>(userDto);
 
@@ -92,9 +98,11 @@ public class UserService : IUserService
         await _context.SaveChangesAsync();
 
         // Mapear la entidad User al DTO de respuesta
-        var createdUserDto = _mapper.Map<UserResponseDto>(user);
+        var roleName = await _roleService.GetRoleName(user.RoleId);
+        var roleDictionary = new Dictionary<int, string> { { user.RoleId, roleName } };
 
-        return createdUserDto;
+        return _mapper.Map<UserResponseDto>(user, opts => opts.Items["RoleDictionary"] = roleDictionary);
+
     }
 
 
@@ -108,7 +116,10 @@ public class UserService : IUserService
 
         _context.Users.Remove(user);
         await _context.SaveChangesAsync();
-        return _mapper.Map<UserResponseDto>(user);
+        var roleName = await _roleService.GetRoleName(user.RoleId);
+        var roleDictionary = new Dictionary<int, string> { { user.RoleId, roleName } };
+
+        return _mapper.Map<UserResponseDto>(user, opts => opts.Items["RoleDictionary"] = roleDictionary);
     }
 
     private bool UserExists(int id)
