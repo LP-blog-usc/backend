@@ -3,8 +3,10 @@ using Blog.Data;
 using Blog.Models.DataSet;
 using Blog.Models.Dtos.Request;
 using Blog.Models.Dtos.Response;
+using Blog.Models.InnerModels;
 using Blog.Services.IServices;
 using Microsoft.EntityFrameworkCore;
+using NuGet.Configuration;
 
 namespace Blog.Services
 {
@@ -17,6 +19,52 @@ namespace Blog.Services
         {
             _context = context;
             _mapper = mapper;
+        }
+
+        public async Task<IEnumerable<PostResponseDto>> GetAllPostsAsync()
+        {
+            var postsWithAuthors = await _context.Posts
+                .Include(p => p.Comments)
+                .Include(p => p.Likes)
+                .Select(p => new PostWithAuthor
+                {
+                    Post = p,
+                    AuthorName = _context.Users
+                        .Where(u => u.Id == p.AuthorId)
+                        .Select(u => u.Name + " " + u.LastName)
+                        .FirstOrDefault() ?? "Unknown Author"
+                })
+                .ToListAsync();
+
+            return _mapper.Map<IEnumerable<PostResponseDto>>(postsWithAuthors);
+        }
+
+        // Método para obtener un post por Id
+        public async Task<PostResponseDto?> GetPostByIdAsync(int id)
+        {
+            // Obtiene un post por su Id incluyendo los comentarios, likes y el nombre del autor
+            var postWithAuthor = await _context.Posts
+                .Include(p => p.Comments)
+                .Include(p => p.Likes)
+                .Where(p => p.Id == id)
+                .Select(p => new PostWithAuthor
+                {
+                    Post = p,
+                    AuthorName = _context.Users
+                        .Where(u => u.Id == p.AuthorId)
+                        .Select(u => u.Name + " " + u.LastName)
+                        .FirstOrDefault() ?? "Unknown Author"
+                })
+                .FirstOrDefaultAsync();
+
+            // Si el post no existe, devuelve null
+            if (postWithAuthor == null)
+            {
+                return null;
+            }
+
+            // Mapea el PostWithAuthor a PostResponseDto y lo devuelve
+            return _mapper.Map<PostResponseDto>(postWithAuthor);
         }
 
         // Verifica si el autor existe
@@ -40,19 +88,20 @@ namespace Blog.Services
             await _context.SaveChangesAsync();
 
             // Obtener el autor (nombre y apellido) por el AuthorId
-            var author = await _context.Users
+            var authorName = await _context.Users
                 .Where(u => u.Id == postDto.AuthorId)
-                .Select(u => new { u.Name, u.LastName })
-                .FirstOrDefaultAsync();
+                .Select(u => u.Name + " " + u.LastName)
+                .FirstOrDefaultAsync() ?? "Unknown Author";
 
-            // Actualizar el nombre del autor en el Post antes de mapearlo a PostResponseDto
-            var postResponse = _mapper.Map<PostResponseDto>(post);
-            postResponse.AuthorName = author != null
-                ? $"{author.Name} {author.LastName}"
-                : "Unknown";
+            // Crear un PostWithAuthor
+            var postWithAuthor = new PostWithAuthor
+            {
+                Post = post,
+                AuthorName = authorName
+            };
 
-            return postResponse;
+            // Mapear PostWithAuthor a PostResponseDto
+            return _mapper.Map<PostResponseDto>(postWithAuthor);
         }
-
     }
 }
