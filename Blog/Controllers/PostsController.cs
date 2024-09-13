@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Blog.Data;
-using Blog.Models.DataSet;
+using Blog.Models;
+using Blog.Services.IServices;
+using Blog.Models.Dtos.Request;
+using Blog.Models.Dtos.Response;
 
 namespace Blog.Controllers
 {
@@ -14,95 +12,55 @@ namespace Blog.Controllers
     [ApiController]
     public class PostsController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IPostService _postService;
 
-        public PostsController(ApplicationDbContext context)
+        public PostsController(IPostService postService)
         {
-            _context = context;
-        }
-
-        // GET: api/Posts
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Post>>> GetPosts()
-        {
-            return await _context.Posts.ToListAsync();
-        }
-
-        // GET: api/Posts/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Post>> GetPost(int id)
-        {
-            var post = await _context.Posts.FindAsync(id);
-
-            if (post == null)
-            {
-                return NotFound();
-            }
-
-            return post;
-        }
-
-        // PUT: api/Posts/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutPost(int id, Post post)
-        {
-            if (id != post.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(post).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!PostExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
+            _postService = postService;
         }
 
         // POST: api/Posts
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Post>> PostPost(Post post)
+        public async Task<ActionResult<ApiResponse<PostResponseDto>>> CreatePost(PostRequestDto postDto)
         {
-            _context.Posts.Add(post);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetPost", new { id = post.Id }, post);
-        }
-
-        // DELETE: api/Posts/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeletePost(int id)
-        {
-            var post = await _context.Posts.FindAsync(id);
-            if (post == null)
+            try
             {
-                return NotFound();
+                // Valida si el autor existe
+                if (!await _postService.AuthorExistsAsync(postDto.AuthorId))
+                {
+                    return BadRequest(new ApiResponse<PostResponseDto>
+                    {
+                        Success = false,
+                        Message = "Post creation failed.",
+                        Errors = new Dictionary<string, List<string>>
+                        {
+                            { "AuthorId", new List<string> { "The specified author does not exist." } }
+                        }
+                    });
+                }
+
+                // Crear el post
+                var createdPostDto = await _postService.CreatePostAsync(postDto);
+                return Ok(new ApiResponse<PostResponseDto>
+                {
+                    Success = true,
+                    Message = "Post created successfully.",
+                    Data = createdPostDto
+                });
             }
-
-            _context.Posts.Remove(post);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool PostExists(int id)
-        {
-            return _context.Posts.Any(e => e.Id == id);
+            catch (Exception ex)
+            {
+                // Manejo general de excepciones
+                return StatusCode(500, new ApiResponse<PostResponseDto>
+                {
+                    Success = false,
+                    Message = "An unexpected error occurred while creating the post.",
+                    Errors = new Dictionary<string, List<string>>
+                    {
+                        { "Exception", new List<string> { ex.Message } }
+                    }
+                });
+            }
         }
     }
 }
