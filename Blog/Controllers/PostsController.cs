@@ -5,6 +5,7 @@ using Blog.Models;
 using Blog.Services.IServices;
 using Blog.Models.Dtos.Request;
 using Blog.Models.Dtos.Response;
+using Blog.Models.Dtos.UpdateDtos;
 
 namespace Blog.Controllers
 {
@@ -104,7 +105,7 @@ namespace Blog.Controllers
                         Message = "Post creation failed.",
                         Errors = new Dictionary<string, List<string>>
                         {
-                            { "AuthorId", new List<string> { "The specified author does not exist." } }
+                            { "AuthorId", new List<string> { "The specified user does not exist or isn't an author." } }
                         }
                     });
                 }
@@ -132,5 +133,51 @@ namespace Blog.Controllers
                 });
             }
         }
+
+        [HttpPut("{postId}")]
+        public async Task<ActionResult<ApiResponse<PostResponseDto>>> UpdatePost(int postId, PostUpdateDto postUpdateDto)
+        {
+            try
+            {
+                // Intentar actualizar el post llamando al servicio
+                var updatedPostDto = await _postService.UpdatePostAsync(postId, postUpdateDto);
+
+                return Ok(new ApiResponse<PostResponseDto>
+                {
+                    Success = true,
+                    Message = "Post updated successfully.",
+                    Data = updatedPostDto
+                });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return StatusCode(403, new ApiResponse<PostResponseDto>
+                {
+                    Success = false,
+                    Message = "You are not authorized to edit this post.",
+                });
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound(new ApiResponse<PostResponseDto>
+                {
+                    Success = false,
+                    Message = "Post not found."
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ApiResponse<PostResponseDto>
+                {
+                    Success = false,
+                    Message = "An unexpected error occurred while updating the post.",
+                    Errors = new Dictionary<string, List<string>>
+            {
+                { "Exception", new List<string> { ex.Message } }
+            }
+                });
+            }
+        }
+
     }
 }

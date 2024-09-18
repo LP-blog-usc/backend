@@ -1,8 +1,10 @@
 ﻿using AutoMapper;
 using Blog.Data;
+using Blog.Enums;
 using Blog.Models.DataSet;
 using Blog.Models.Dtos.Request;
 using Blog.Models.Dtos.Response;
+using Blog.Models.Dtos.UpdateDtos;
 using Blog.Models.InnerModels;
 using Blog.Services.IServices;
 using Microsoft.EntityFrameworkCore;
@@ -70,7 +72,7 @@ namespace Blog.Services
         // Verifica si el autor existe
         public async Task<bool> AuthorExistsAsync(int authorId)
         {
-            return await _context.Users.AnyAsync(u => u.Id == authorId);
+            return await _context.Users.AnyAsync(u => u.Id == authorId && u.RoleId == (int)UserRoleEnum.Autor);
         }
 
         // Crea un nuevo post
@@ -102,6 +104,67 @@ namespace Blog.Services
 
             // Mapear PostWithAuthor a PostResponseDto
             return _mapper.Map<PostResponseDto>(postWithAuthor);
+        }
+
+        public async Task<bool> IsAuthorOfPostAsync(int postId, int authorId)
+        {
+            // Verifica si el post con el ID especificado pertenece al autor con el ID especificado
+            return await _context.Posts.AnyAsync(p => p.Id == postId && p.AuthorId == authorId);
+        }
+
+        public async Task<PostResponseDto> UpdatePostAsync(int postId, PostUpdateDto postUpdateDto)
+        {
+            // Verifica si el post pertenece al autor antes de actualizar
+            if (!await IsAuthorOfPostAsync(postId, postUpdateDto.AuthorId))
+            {
+                throw new UnauthorizedAccessException("You are not authorized to edit this post.");
+            }
+
+            // Busca el post existente incluyendo comentarios y likes
+            var post = await _context.Posts
+                .Include(p => p.Comments)
+                .Include(p => p.Likes)
+                .FirstOrDefaultAsync(p => p.Id == postId);
+
+            if (post == null)
+            {
+                throw new KeyNotFoundException("Post not found.");
+            }
+
+            // Actualiza los campos si están presentes en el DTO
+            if (!string.IsNullOrEmpty(postUpdateDto.Title))
+            {
+                post.Title = postUpdateDto.Title;
+            }
+
+            if (!string.IsNullOrEmpty(postUpdateDto.Body))
+            {
+                post.Body = postUpdateDto.Body;
+            }
+
+            post.UpdatedAt = DateTime.UtcNow;
+
+            // Guarda los cambios en la base de datos
+            _context.Posts.Update(post);
+            await _context.SaveChangesAsync();
+
+            // Obtener el nombre del autor
+            var authorName = await _context.Users
+                .Where(u => u.Id == post.AuthorId)
+                .Select(u => u.Name + " " + u.LastName)
+                .FirstOrDefaultAsync();
+
+            // Crea el objeto intermedio PostWithAuthor
+            var postWithAuthor = new PostWithAuthor
+            {
+                Post = post,
+                AuthorName = authorName ?? "Unknown Author"
+            };
+
+            // Mapear el PostWithAuthor a PostResponseDto usando AutoMapper
+            var postResponseDto = _mapper.Map<PostResponseDto>(postWithAuthor);
+
+            return postResponseDto;
         }
     }
 }
