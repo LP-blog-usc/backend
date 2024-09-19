@@ -41,6 +41,30 @@ namespace Blog.Services
             return _mapper.Map<IEnumerable<PostResponseDto>>(postsWithAuthors);
         }
 
+        public async Task<List<PostResponseDto>> GetPostsByAuthorAsync(int authorId)
+        {
+            // Obtiene todos los posts asociados al autor
+            var postsWithAuthor = await _context.Posts
+                .Where(p => p.AuthorId == authorId)
+                .Include(p => p.Comments)
+                .Include(p => p.Likes)
+                .Select(p => new PostWithAuthor
+                {
+                    Post = p,
+                    AuthorName = _context.Users
+                        .Where(u => u.Id == p.AuthorId)
+                        .Select(u => u.Name + " " + u.LastName)
+                        .FirstOrDefault() ?? "Unknown Author"
+                })
+                .ToListAsync();
+
+            // Mapea los resultados a PostResponseDto
+            var postResponseDtos = _mapper.Map<List<PostResponseDto>>(postsWithAuthor);
+
+            return postResponseDtos;
+        }
+
+
         // Método para obtener un post por Id
         public async Task<PostResponseDto?> GetPostByIdAsync(int id)
         {
@@ -165,6 +189,37 @@ namespace Blog.Services
             var postResponseDto = _mapper.Map<PostResponseDto>(postWithAuthor);
 
             return postResponseDto;
+        }
+
+        public async Task<bool> DeletePostAsync(int postId, int authorId)
+        {
+            // Busca el post por su Id
+            var post = await _context.Posts
+                .Include(p => p.Comments)  // Incluye los comentarios para verificar si tiene alguno
+                .FirstOrDefaultAsync(p => p.Id == postId);
+
+            if (post == null)
+            {
+                throw new KeyNotFoundException("Post not found.");
+            }
+
+            // Verifica si el autor que solicita la eliminación es el dueño del post
+            if (post.AuthorId != authorId)
+            {
+                throw new UnauthorizedAccessException("You are not authorized to delete this post.");
+            }
+
+            // Verifica si el post tiene comentarios
+            if (post.Comments != null && post.Comments.Any())
+            {
+                throw new InvalidOperationException("Cannot delete a post that contains comments.");
+            }
+
+            // Elimina el post si pasa todas las validaciones
+            _context.Posts.Remove(post);
+            await _context.SaveChangesAsync();
+
+            return true; // Retorna true si la eliminación fue exitosa
         }
     }
 }

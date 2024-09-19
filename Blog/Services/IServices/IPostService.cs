@@ -13,5 +13,7 @@ namespace Blog.Services.IServices
         //Task<PostResponseDto> DeletePostAsync(int id);
         Task<bool> AuthorExistsAsync(int authorId);
         Task<PostResponseDto> UpdatePostAsync(int postId, PostUpdateDto postUpdateDto);
+        Task<bool> DeletePostAsync(int postId, int authorId);
+        Task<List<PostResponseDto>> GetPostsByAuthorAsync(int authorId);
     }
 }

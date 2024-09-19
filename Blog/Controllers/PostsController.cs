@@ -48,6 +48,41 @@ namespace Blog.Controllers
             }
         }
 
+        [HttpGet("author/{authorId}")]
+        public async Task<IActionResult> GetPostsByAuthor(int authorId)
+        {
+            try
+            {
+                // Llama al servicio para obtener los posts del autor
+                var posts = await _postService.GetPostsByAuthorAsync(authorId);
+
+                if (posts == null || !posts.Any())
+                {
+                    return NotFound(new ApiResponse<string>
+                    {
+                        Success = false,
+                        Message = "No posts found for this author."
+                    });
+                }
+
+                return Ok(new ApiResponse<List<PostResponseDto>>
+                {
+                    Success = true,
+                    Message = "Posts retrieved successfully.",
+                    Data = posts
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ApiResponse<string>
+                {
+                    Success = false,
+                    Message = $"An unexpected error occurred: {ex.Message}"
+                });
+            }
+        }
+
+
         [HttpGet("{id}")]
         public async Task<ActionResult<ApiResponse<PostResponseDto>>> GetPost(int id)
         {
@@ -175,6 +210,63 @@ namespace Blog.Controllers
             {
                 { "Exception", new List<string> { ex.Message } }
             }
+                });
+            }
+        }
+
+        [HttpDelete("{postId}")]
+        public async Task<IActionResult> DeletePost(int postId, [FromQuery] int authorId)
+        {
+            try
+            {
+                // Llama al servicio para eliminar el post
+                var result = await _postService.DeletePostAsync(postId, authorId);
+
+                if (result)
+                {
+                    return Ok(new ApiResponse<string>
+                    {
+                        Success = true,
+                        Message = "Post successfully deleted."
+                    });
+                }
+
+                return BadRequest(new ApiResponse<string>
+                {
+                    Success = false,
+                    Message = "Unable to delete the post."
+                });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new ApiResponse<PostResponseDto>
+                {
+                    Success = false,
+                    Message = "You are not authorized to delete this post.",
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new ApiResponse<string>
+                {
+                    Success = false,
+                    Message = ex.Message
+                });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new ApiResponse<string>
+                {
+                    Success = false,
+                    Message = ex.Message
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ApiResponse<string>
+                {
+                    Success = false,
+                    Message = $"An unexpected error occurred: {ex.Message}"
                 });
             }
         }
