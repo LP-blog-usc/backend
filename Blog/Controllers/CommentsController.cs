@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Blog.Data;
 using Blog.Models.DataSet;
+using Blog.Models.Dtos.Request;
+using Blog.Models.Dtos.Response;
+using Blog.Services.IServices;
 
 namespace Blog.Controllers
 {
@@ -14,95 +17,77 @@ namespace Blog.Controllers
     [ApiController]
     public class CommentsController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly ICommentsService _commentsService;
 
-        public CommentsController(ApplicationDbContext context)
+        public CommentsController(ICommentsService commentsService)
         {
-            _context = context;
+            _commentsService = commentsService;
         }
 
-        // GET: api/Comments
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Comment>>> GetComments()
+        // POST /api/comments
+        [HttpPost]
+        public async Task<ActionResult<ApiResponse<CommentResponseDto>>> CreateComment(CommentRequestDto commentRequestDto)
         {
-            return await _context.Comments.ToListAsync();
-        }
-
-        // GET: api/Comments/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Comment>> GetComment(int id)
-        {
-            var comment = await _context.Comments.FindAsync(id);
-
-            if (comment == null)
-            {
-                return NotFound();
-            }
-
-            return comment;
-        }
-
-        // PUT: api/Comments/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutComment(int id, Comment comment)
-        {
-            if (id != comment.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(comment).State = EntityState.Modified;
-
             try
             {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!CommentExists(id))
+                var createdComment = await _commentsService.CreateCommentAsync(commentRequestDto);
+
+                return Ok(new ApiResponse<CommentResponseDto>
                 {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                    Success = true,
+                    Message = "Comment successfully created.",
+                    Data = createdComment
+                });
             }
-
-            return NoContent();
-        }
-
-        // POST: api/Comments
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Comment>> PostComment(Comment comment)
-        {
-            _context.Comments.Add(comment);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetComment", new { id = comment.Id }, comment);
-        }
-
-        // DELETE: api/Comments/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteComment(int id)
-        {
-            var comment = await _context.Comments.FindAsync(id);
-            if (comment == null)
+            catch (KeyNotFoundException ex)
             {
-                return NotFound();
+                return NotFound(new ApiResponse<CommentResponseDto>
+                {
+                    Success = false,
+                    Message = ex.Message
+                });
             }
-
-            _context.Comments.Remove(comment);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ApiResponse<CommentResponseDto>
+                {
+                    Success = false,
+                    Message = $"An unexpected error occurred: {ex.Message}"
+                });
+            }
         }
 
-        private bool CommentExists(int id)
+        [HttpGet("posts/{postId}/comments")]
+        public async Task<IActionResult> GetCommentsByPostId(int postId)
         {
-            return _context.Comments.Any(e => e.Id == id);
+            try
+            {
+                // Llama al servicio para obtener los comentarios del post
+                var comments = await _commentsService.GetCommentsByPostIdAsync(postId);
+
+                return Ok(new ApiResponse<IEnumerable<CommentResponseDto>>
+                {
+                    Success = true,
+                    Message = "Comments retrieved successfully.",
+                    Data = comments
+                });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new ApiResponse<IEnumerable<CommentResponseDto>>
+                {
+                    Success = false,
+                    Message = ex.Message
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ApiResponse<IEnumerable<CommentResponseDto>>
+                {
+                    Success = false,
+                    Message = $"An unexpected error occurred: {ex.Message}"
+                });
+            }
         }
     }
 }

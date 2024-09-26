@@ -16,6 +16,7 @@ namespace Blog.Models.DataSet
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public DateTime DeletedAt { get; set; }
+        [Required(ErrorMessage = "El autor es obligatorio.")]
         public int AuthorId { get; set; }
         public ICollection<Comment>? Comments { get; set; }
         public ICollection<Like>? Likes { get; set; }
