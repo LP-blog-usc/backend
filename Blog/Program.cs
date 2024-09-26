@@ -37,6 +37,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
                      new MySqlServerVersion(new Version(8, 0, 30)),
                       mysqlOptions => mysqlOptions.EnableRetryOnFailure()));
 
+builder.Services.AddScoped<ICommentsService, CommentService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPostService, PostService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
