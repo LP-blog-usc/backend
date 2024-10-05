@@ -16,15 +16,14 @@ namespace Blog.Profiles
                 .ForMember(dest => dest.Body, opt => opt.MapFrom(src => src.Body))
                 .ForMember(dest => dest.AuthorId, opt => opt.MapFrom(src => src.AuthorId));
 
-            // Mapea de Post a PostResponseDto (usado para devolver la información de un post creado)
+            // Mapea de PostWithAuthor a PostResponseDto
             CreateMap<PostWithAuthor, PostResponseDto>()
-               .ForMember(dest => dest.Title, opt => opt.MapFrom(src => src.Post.Title))
-               .ForMember(dest => dest.Body, opt => opt.MapFrom(src => src.Post.Body))
-               .ForMember(dest => dest.AuthorName, opt => opt.MapFrom(src => src.AuthorName))
-               .ForMember(dest => dest.Comments, opt => opt.MapFrom(src => src.Post.Comments ?? new List<Comment>()))
-               .ForMember(dest => dest.Likes, opt => opt.MapFrom(src => src.Post.Likes ?? new List<Like>()))
-               .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.Post.UpdatedAt));
-
+                .ForMember(dest => dest.Title, opt => opt.MapFrom(src => src.Post.Title))
+                .ForMember(dest => dest.Body, opt => opt.MapFrom(src => src.Post.Body))
+                .ForMember(dest => dest.AuthorName, opt => opt.MapFrom(src => src.AuthorName))
+                .ForMember(dest => dest.Comments, opt => opt.MapFrom(src => src.Post.Comments ?? new List<Comment>()))
+                .ForMember(dest => dest.Likes, opt => opt.MapFrom(src => src.Post.Likes ?? new List<Like>()))
+                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.Post.UpdatedAt));
         }
     }
 }
