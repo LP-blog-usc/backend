@@ -10,7 +10,18 @@ using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers( options =>
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", builder =>
+    {
+        builder
+            .AllowAnyOrigin() // Permite cualquier origen
+            .AllowAnyMethod() // Permite cualquier método HTTP (GET, POST, etc.)
+            .AllowAnyHeader(); // Permite cualquier encabezado
+    });
+});
+
+builder.Services.AddControllers(options =>
 {
     options.Filters.Add<ValidationFilter>();
 })
@@ -52,6 +63,9 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 var app = builder.Build();
+
+// Aplicar la política CORS
+app.UseCors("AllowAll");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
