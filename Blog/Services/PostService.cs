@@ -71,15 +71,14 @@ namespace Blog.Services
             // Obtiene un post por su Id incluyendo los comentarios, likes y el nombre del autor
             var postWithAuthor = await _context.Posts
                 .Include(p => p.Comments)
+                    .ThenInclude(c => c.User) // Incluye el usuario de cada comentario
                 .Include(p => p.Likes)
+                    .ThenInclude(l => l.User) // Incluye el usuario de cada like
                 .Where(p => p.Id == id)
                 .Select(p => new PostWithAuthor
                 {
                     Post = p,
-                    AuthorName = _context.Users
-                        .Where(u => u.Id == p.AuthorId)
-                        .Select(u => u.Name + " " + u.LastName)
-                        .FirstOrDefault() ?? "Unknown Author"
+                    AuthorName = p.Author != null ? p.Author.Name + " " + p.Author.LastName : "Unknown Author"
                 })
                 .FirstOrDefaultAsync();
 
@@ -92,6 +91,8 @@ namespace Blog.Services
             // Mapea el PostWithAuthor a PostResponseDto y lo devuelve
             return _mapper.Map<PostResponseDto>(postWithAuthor);
         }
+
+
 
         // Verifica si el autor existe
         public async Task<bool> AuthorExistsAsync(int authorId)

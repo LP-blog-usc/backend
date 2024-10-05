@@ -21,5 +21,6 @@ namespace Blog.Models.DataSet
         public ICollection<Comment>? Comments { get; set; }
         public ICollection<Like>? Likes { get; set; }
         public Moderation? Moderation { get; set; }
+        public User Author { get; set; }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Blog.Models.DataSet;
+using Blog.Models.Dtos.Response;
 using System.ComponentModel.DataAnnotations;
 
 namespace Blog.Models.Dtos.Response
@@ -9,7 +10,7 @@ namespace Blog.Models.Dtos.Response
         public string Body { get; set; } = string.Empty;
         public DateTime UpdatedAt { get; set; }
         public string AuthorName { get; set; }
-        public ICollection<Comment>? Comments { get; set; }
-        public ICollection<Like>? Likes { get; set; }
+        public ICollection<CommentResponseDto>? Comments { get; set; }
+        public ICollection<LikeResponseDto>? Likes { get; set; }
     }
 }
