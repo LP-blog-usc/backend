@@ -1,6 +1,8 @@
-﻿using Blog.Models.Dtos.Request;
+﻿using Blog.Enums;
+using Blog.Models.Dtos.Request;
 using Blog.Models.Dtos.Response;
 using Blog.Models.Dtos.UpdateDtos;
+using System.Threading.Tasks;
 
 namespace Blog.Services.IServices
 {
@@ -15,5 +17,6 @@ namespace Blog.Services.IServices
         Task<PostResponseDto> UpdatePostAsync(int postId, PostUpdateDto postUpdateDto);
         Task<bool> DeletePostAsync(int postId, int authorId);
         Task<List<PostResponseDto>> GetPostsByAuthorAsync(int authorId);
+        Task<PostResponseDto?> UpdatePostStatusAsync(int id, PostStatusEnum newStatus);
     }
 }
