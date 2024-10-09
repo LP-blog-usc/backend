@@ -103,33 +103,29 @@ namespace Blog.Services
         // Crea un nuevo post
         public async Task<PostResponseDto> CreatePostAsync(PostRequestDto postDto)
         {
-            // Mapea el PostRequestDto a la entidad Post usando AutoMapper
             var post = _mapper.Map<Post>(postDto);
 
-            // Agrega fechas de creación y actualización
             post.CreatedAt = DateTime.UtcNow;
             post.UpdatedAt = DateTime.UtcNow;
+            post.Status = PostStatusEnum.EnRevision; // Estado inicial
 
-            // Agregar el post al contexto
             _context.Posts.Add(post);
             await _context.SaveChangesAsync();
 
-            // Obtener el autor (nombre y apellido) por el AuthorId
             var authorName = await _context.Users
                 .Where(u => u.Id == postDto.AuthorId)
                 .Select(u => u.Name + " " + u.LastName)
                 .FirstOrDefaultAsync() ?? "Unknown Author";
 
-            // Crear un PostWithAuthor
             var postWithAuthor = new PostWithAuthor
             {
                 Post = post,
                 AuthorName = authorName
             };
 
-            // Mapear PostWithAuthor a PostResponseDto
             return _mapper.Map<PostResponseDto>(postWithAuthor);
         }
+
 
         public async Task<bool> IsAuthorOfPostAsync(int postId, int authorId)
         {
@@ -168,6 +164,7 @@ namespace Blog.Services
             }
 
             post.UpdatedAt = DateTime.UtcNow;
+            post.Status = PostStatusEnum.EnRevision;
 
             // Guarda los cambios en la base de datos
             _context.Posts.Update(post);
@@ -222,5 +219,31 @@ namespace Blog.Services
 
             return true; // Retorna true si la eliminación fue exitosa
         }
+
+        public async Task<PostResponseDto?> UpdatePostStatusAsync(int id, PostStatusEnum newStatus)
+        {
+            var post = await _context.Posts.FindAsync(id);
+            if (post == null)
+                return null;
+
+            post.Status = newStatus;
+            post.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            var authorName = await _context.Users
+                .Where(u => u.Id == post.AuthorId)
+                .Select(u => u.Name + " " + u.LastName)
+                .FirstOrDefaultAsync() ?? "Unknown Author";
+
+            var postWithAuthor = new PostWithAuthor
+            {
+                Post = post,
+                AuthorName = authorName
+            };
+
+            return _mapper.Map<PostResponseDto>(postWithAuthor);
+        }
+
     }
 }

@@ -6,6 +6,7 @@ using Blog.Services.IServices;
 using Blog.Models.Dtos.Request;
 using Blog.Models.Dtos.Response;
 using Blog.Models.Dtos.UpdateDtos;
+using Blog.Enums;
 
 namespace Blog.Controllers
 {
@@ -270,6 +271,50 @@ namespace Blog.Controllers
                 });
             }
         }
+
+        [HttpPut("{id}/approve")]
+        public async Task<ActionResult<ApiResponse<PostResponseDto>>> ApprovePost(int id)
+        {
+            var updatedPost = await _postService.UpdatePostStatusAsync(id, PostStatusEnum.Aprobado);
+            if (updatedPost == null)
+            {
+                return NotFound(new ApiResponse<PostResponseDto>
+                {
+                    Success = false,
+                    Message = "Post not found."
+                });
+            }
+
+            return Ok(new ApiResponse<PostResponseDto>
+            {
+                Success = true,
+                Message = "Post approved successfully.",
+                Data = updatedPost
+            });
+        }
+
+        [HttpPut("{id}/block")]
+        public async Task<ActionResult<ApiResponse<PostResponseDto>>> BlockPost(int id)
+        {
+            var updatedPost = await _postService.UpdatePostStatusAsync(id, PostStatusEnum.Bloqueado);
+            if (updatedPost == null)
+            {
+                return NotFound(new ApiResponse<PostResponseDto>
+                {
+                    Success = false,
+                    Message = "Post not found."
+                });
+            }
+
+            return Ok(new ApiResponse<PostResponseDto>
+            {
+                Success = true,
+                Message = "Post blocked successfully.",
+                Data = updatedPost
+            });
+        }
+
+
 
     }
 }

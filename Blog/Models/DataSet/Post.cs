@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Blog.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace Blog.Models.DataSet
 {
@@ -20,6 +21,7 @@ namespace Blog.Models.DataSet
         public int AuthorId { get; set; }
         public ICollection<Comment>? Comments { get; set; }
         public ICollection<Like>? Likes { get; set; }
+        public PostStatusEnum Status { get; set; } = PostStatusEnum.EnRevision;
         public Moderation? Moderation { get; set; }
         public User Author { get; set; }
     }
